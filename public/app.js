@@ -8,8 +8,13 @@ form.addEventListener("submit",async (e) => {
     const res = await axios.post("http://localhost:8000/users",{
         username,
        password
-    }).then((res) => console.log(res.data))
-        .catch((error) => console.error(error))
+    }).then((res) => { 
+        console.log(res.data)
+        window.location.href="/login"
+    
+    
+})
+    .catch((error) => console.error(error))
 
     // console.log(username);
     // console.log(password);
