@@ -3,6 +3,8 @@ import type { Request, Response } from "express";
 import path from "path";
 import {prisma} from "./prismaclient";
 import bcrypt from "bcrypt"
+import type { User } from "./generated/prisma/client";
+
 
 const app = express();
 app.use(express.json());
@@ -27,6 +29,24 @@ app.post("/users", async (req: Request, res: Response) => {
     try{
         const username : string  = req.body.username;
         const password : string = req.body.password;
+
+        const userExists   = await prisma.user.findFirst({
+            where: {
+                name: {
+                    equals: username,
+                    mode: 'insensitive'
+                }
+
+            }
+
+            
+        })
+
+        if(userExists){
+           
+            res.json({"message":"User already exists"});
+           
+        }
         const hashedPassword = await bcrypt.hash(password,10);
 
         const user = await prisma.user.create({
@@ -37,7 +57,7 @@ app.post("/users", async (req: Request, res: Response) => {
             }
         })
 
-        res.redirect("/login");
+       
 
     }catch(e){
         console.log(e);
