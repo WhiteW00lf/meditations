@@ -1,5 +1,3 @@
-
-
 let forms = document.getElementById('signupform');
 forms?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -43,8 +41,7 @@ loginform?.addEventListener("submit", async (e) => {
     const res = await axios.post("http://localhost:8000/loginusers", {
         username,
         password
-    });
-    localStorage.setItem("tokenfromsurya", res.data.token);
+    }, {withCredentials: true});
     window.location.href ="/dashboard";
         //window.location.href = "/dashboard";
     
