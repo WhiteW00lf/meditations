@@ -8,6 +8,14 @@ import jwt from 'jsonwebtoken';
 import {env} from "prisma/config";
 import cookieParser from "cookie-parser";
 
+declare global {
+    namespace Express{
+        interface Request {
+            user? : String |  jwt.JwtPayload;
+        }
+    }
+}
+
 
 const app = express();
 app.use(express.json());
@@ -17,14 +25,32 @@ app.use(cookieParser());
 
 function AuthMiddleware(req: Request, res: Response, next: NextFunction) {
 
-    // let tokenfromuser = req.headers.
+        let tokenfromuser = req.cookies.token;
+        if (!tokenfromuser) {
+          return   res.status(401).send("Unauthorized");
+        }
+
+    try {
+        let decoded = jwt.verify(tokenfromuser as string, process.env.SECRET as string);
+        req.user = decoded;
+        next();
+
+    }catch(err) {
+            console.error(err);
+            return res.status(401).send("Unauthorized");
+
+    }
+
+
+
+
 }
 
 app.get("/", (req: Request, res: Response) => {
     res.status(200).send("Hello from meditation");
 });
 
-app.get("/dashboard", (req: Request, res: Response) => {
+app.get("/dashboard", AuthMiddleware, (req: Request, res: Response) => {
     res.send("Dashboard");
 
 
@@ -113,7 +139,7 @@ app.post("/loginusers", async (req: Request, res: Response) => {
         let unhashPassword = await bcrypt.compare(password, userExists.password);
         if (unhashPassword) {
 
-            let jwt_secret = process.env.SECRET as string;
+            let jwt_secret = process.env.SECRET as string ;
             let token = jwt.sign({username: userExists.id}, jwt_secret, {expiresIn: "1 hr"});
             res.cookie("token",
                 token,
