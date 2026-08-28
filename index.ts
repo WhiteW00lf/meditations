@@ -4,7 +4,7 @@ import path, {resolve} from "path";
 import {prisma} from "./prismaclient";
 import bcrypt from "bcrypt"
 import type {User} from "./generated/prisma/client";
-import jwt from 'jsonwebtoken';
+import jwt, {type JwtPayload} from 'jsonwebtoken';
 import {env} from "prisma/config";
 import cookieParser from "cookie-parser";
 
@@ -23,7 +23,7 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 
-function AuthMiddleware(req: Request, res: Response, next: NextFunction) {
+function AuthMiddleware( req: Request, res: Response, next: NextFunction)  {
 
         let tokenfromuser = req.cookies.token;
         if (!tokenfromuser) {
@@ -31,7 +31,7 @@ function AuthMiddleware(req: Request, res: Response, next: NextFunction) {
         }
 
     try {
-        let decoded = jwt.verify(tokenfromuser as string, process.env.SECRET as string);
+        let decoded =  jwt.verify(tokenfromuser as string, process.env.SECRET as string);
         req.user = decoded;
         next();
 
@@ -51,7 +51,9 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.get("/dashboard", AuthMiddleware, (req: Request, res: Response) => {
-    res.send("Dashboard");
+   // const allnotes = await prisma.note.findMany()
+
+    res.sendFile(path.join(__dirname, "public/notes_index.html"));
 
 
 });
@@ -140,7 +142,7 @@ app.post("/loginusers", async (req: Request, res: Response) => {
         if (unhashPassword) {
 
             let jwt_secret = process.env.SECRET as string ;
-            let token = jwt.sign({username: userExists.id}, jwt_secret, {expiresIn: "1 hr"});
+            let token = jwt.sign({user_id: userExists.id}, jwt_secret, {expiresIn: "1 hr"});
             res.cookie("token",
                 token,
                 {maxAge: 1000 * 60 * 60,httpOnly: true, secure: false, sameSite: "lax"});
@@ -160,7 +162,46 @@ app.post("/loginusers", async (req: Request, res: Response) => {
 
 });
 
+/* CRUD FOR NOTES */
+
+app.get("/create_note", AuthMiddleware, (req: Request, res: Response) => {
+
+    res.status(200).sendFile(path.join(__dirname, "public/notes_create.html"));
+
+});
+
+app.post("/notes", AuthMiddleware,async (req: Request, res: Response) => {
+    const title = req.body.title;
+    const description = req.body.description;
+
+    const newNote = await prisma.note.create({
+       data: {
+           title: title,
+           description: description,
+           user_Id : (req.user as JwtPayload).user_id,
+
+       },
+    });
+
+    res.json({"status":201, message: "Note created"});
+    console.log(newNote);
+
+
+
+
+
+});
+
+app.get("/indexnotes", AuthMiddleware, async (req: Request, res: Response) => {
+
+    let allNotes = await prisma.note.findMany()
+
+    res.json({"status":200, data: allNotes});
+    console.log(allNotes);
+})
 
 app.listen(8000, () => {
     console.log("Running on port 8000");
-})
+});
+
+
