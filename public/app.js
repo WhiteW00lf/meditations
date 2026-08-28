@@ -4,21 +4,17 @@ forms?.addEventListener("submit", async (e) => {
     const username = forms.username.value;
     const password = forms.password.value;
 
-    const res = await axios.post("http://localhost:8000/users", {
-        username,
-        password
-    }).then((res) => {
-        console.log(res.data)
-        window.location.href = "/login"
+    try {
+        const res = await axios.post("http://localhost:8000/users", {
+            username,
+            password
+        });
+        console.log(res.data);
+        window.location.href = "/login";
 
-
-    })
-        .catch((error) => console.error(error))
-
-    // console.log(username);
-    // console.log(password);
-
-
+    } catch (error) {
+        console.error(error);
+    }
 
 });
 
@@ -56,4 +52,62 @@ loginform?.addEventListener("submit", async (e) => {
     }
 }
 });
+
+// create notes
+
+let noteform = document.getElementById("noteform");
+noteform?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    try{
+
+        const title = noteform.title.value;
+        const description = noteform.description.value;
+
+        const res = await axios.post("http://localhost:8000/notes", {
+            title,
+            description
+        }, {withCredentials: true});
+        window.location.href = "/dashboard";
+
+    }catch(error){
+        console.log(error.response);
+    }
+
+
+
+
+});
+
+// display notes on the index page
+
+let notesList = document.getElementById("notes-list");
+
+async function loadNotes() {
+    try {
+        const res = await axios.get("http://localhost:8000/indexnotes", {withCredentials: true});
+        const notes = res.data.data;
+
+        notes.forEach((note) => {
+            const noteEl = document.createElement("div");
+            noteEl.classList.add("note");
+
+            const titleEl = document.createElement("h3");
+            titleEl.textContent = note.title;
+
+            const descriptionEl = document.createElement("p");
+            descriptionEl.textContent = note.description;
+
+            noteEl.appendChild(titleEl);
+            noteEl.appendChild(descriptionEl);
+            notesList.appendChild(noteEl);
+        });
+
+    } catch (error) {
+        console.error(error.response);
+    }
+}
+
+if (notesList) {
+    loadNotes();
+}
 
