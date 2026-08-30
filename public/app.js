@@ -97,8 +97,25 @@ async function loadNotes() {
             const descriptionEl = document.createElement("p");
             descriptionEl.textContent = note.description;
 
+            const editLink = document.createElement("a");
+            editLink.href = `/edit_note/${note.id}`;
+            editLink.textContent = "Edit";
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "Delete";
+            deleteBtn.addEventListener("click", async () => {
+                try {
+                    await axios.delete(`http://localhost:8000/notes/${note.id}`, {withCredentials: true});
+                    noteEl.remove();
+                } catch (error) {
+                    console.error(error.response);
+                }
+            });
+
             noteEl.appendChild(titleEl);
             noteEl.appendChild(descriptionEl);
+            noteEl.appendChild(editLink);
+            noteEl.appendChild(deleteBtn);
             notesList.appendChild(noteEl);
         });
 
@@ -109,5 +126,40 @@ async function loadNotes() {
 
 if (notesList) {
     loadNotes();
+}
+
+// edit note
+
+let editnoteform = document.getElementById("editnoteform");
+
+if (editnoteform) {
+    const noteId = window.location.pathname.split("/").pop();
+
+    (async () => {
+        try {
+            const res = await axios.get(`http://localhost:8000/notes/${noteId}`, {withCredentials: true});
+            editnoteform.title.value = res.data.data.title;
+            editnoteform.description.value = res.data.data.description;
+        } catch (error) {
+            console.error(error.response);
+        }
+    })();
+
+    editnoteform.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        try {
+            const title = editnoteform.title.value;
+            const description = editnoteform.description.value;
+
+            await axios.put(`http://localhost:8000/notes/${noteId}`, {
+                title,
+                description
+            }, {withCredentials: true});
+            window.location.href = "/dashboard";
+
+        } catch (error) {
+            console.log(error.response);
+        }
+    });
 }
 

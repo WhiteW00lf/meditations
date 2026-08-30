@@ -194,11 +194,68 @@ app.post("/notes", AuthMiddleware,async (req: Request, res: Response) => {
 
 app.get("/indexnotes", AuthMiddleware, async (req: Request, res: Response) => {
 
-    let allNotes = await prisma.note.findMany()
+    let allNotes = await prisma.note.findMany({
+        where: {
+            user_Id: (req.user as JwtPayload).user_id,
+        },
+    });
 
     res.json({"status":200, data: allNotes});
     console.log(allNotes);
 })
+
+app.get("/notes/:id", AuthMiddleware, async (req: Request, res: Response) => {
+
+    const id = Number(req.params.id);
+    const note = await prisma.note.findUnique({where: {id}});
+
+    if (!note || note.user_Id !== (req.user as JwtPayload).user_id) {
+        return res.status(404).json({message: "Note not found"});
+    }
+
+    res.json({"status": 200, data: note});
+});
+
+app.get("/edit_note/:id", AuthMiddleware, (req: Request, res: Response) => {
+
+    res.status(200).sendFile(path.join(__dirname, "public/notes_edit.html"));
+
+});
+
+app.put("/notes/:id", AuthMiddleware, async (req: Request, res: Response) => {
+
+    const id = Number(req.params.id);
+    const title = req.body.title;
+    const description = req.body.description;
+
+    const note = await prisma.note.findUnique({where: {id}});
+
+    if (!note || note.user_Id !== (req.user as JwtPayload).user_id) {
+        return res.status(404).json({message: "Note not found"});
+    }
+
+    const updatedNote = await prisma.note.update({
+        where: {id},
+        data: {title, description},
+    });
+
+    res.json({"status": 200, message: "Note updated", data: updatedNote});
+});
+
+app.delete("/notes/:id", AuthMiddleware, async (req: Request, res: Response) => {
+
+    const id = Number(req.params.id);
+
+    const note = await prisma.note.findUnique({where: {id}});
+
+    if (!note || note.user_Id !== (req.user as JwtPayload).user_id) {
+        return res.status(404).json({message: "Note not found"});
+    }
+
+    await prisma.note.delete({where: {id}});
+
+    res.json({"status": 200, message: "Note deleted"});
+});
 
 app.listen(8000, () => {
     console.log("Running on port 8000");
