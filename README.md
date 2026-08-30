@@ -1,4 +1,4 @@
-# diaryapp
+# meditations - crud web app
 
 To install dependencies:
 
